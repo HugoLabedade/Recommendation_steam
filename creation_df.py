@@ -6,10 +6,13 @@ df = pd.read_csv("./csv_clean.csv")
 df = df.drop('Unnamed: 0', axis=1)
 
 #le playtime de minutes en heures
-df["Average playtime forever"] = df["Average playtime forever"] / 60
-df["Average playtime two weeks"] = df["Average playtime two weeks"] / 60
-df["Median playtime forever"] = df["Median playtime forever"] / 60
-df["Median playtime two weeks"] = df["Median playtime two weeks"] / 60
+def min_heure(nom_dataset, colonne):
+    nom_dataset[colonne] = nom_dataset[colonne] / 60
+min_heure(df, "Average playtime forever")
+min_heure(df, "Average playtime two weeks")
+min_heure(df, "Median playtime forever")
+min_heure(df, "Median playtime two weeks")
+
 
 #On charge le df des users
 df2 = pd.read_csv("./steam-200k.csv", names=["UserID", "Game", "purchase/play", "Heure_jouee", "0"])
@@ -19,16 +22,19 @@ df2 = df2.drop(df2[df2["purchase/play"] == "purchase"].index)
 df2.drop(columns =['0'],inplace =True)
 
 #On enlève des caractères spéciaux pour préparer le merge sur le nom des jeux
-df['Name'] = df['Name'].str.replace(':','')
-df['Name'] = df['Name'].str.replace('®','')
-df['Name'] = df['Name'].str.replace('™','')
+def remplacement(nom_dataset, colonne, element):
+    nom_dataset[colonne] = nom_dataset[colonne].str.replace(element,'')
+remplacement(df, 'Name', ':')
+remplacement(df, 'Name', '®')
+remplacement(df, 'Name', '™')
 #En particulier pour Resident Evil (~150 lignes en +)
-df2['Game'] = df2['Game'].str.replace(' / Biohazard 6','')
-df2['Game'] = df2['Game'].str.replace(' / biohazard HD REMASTER','')
-df2['Game'] = df2['Game'].str.replace(' / Biohazard 5','')
-df2['Game'] = df2['Game'].str.replace(' / biohazard 4','')
-df2['Game'] = df2['Game'].str.replace(' / Biohazard Revelations 2','')
-df2['Game'] = df2['Game'].str.replace(' / Biohazard Revelations','')
+remplacement(df2, 'Game', ' / Biohazard 6')
+remplacement(df2, 'Game', ' / biohazard HD REMASTER')
+remplacement(df2, 'Game', ' / Biohazard 5')
+remplacement(df2, 'Game', ' / biohazard 4')
+remplacement(df2, 'Game', ' / Biohazard 6')
+remplacement(df2, 'Game', ' / Biohazard Revelations 2')
+remplacement(df2, 'Game', ' / Biohazard Revelations')
 
 #On merge les deux datasets par rapport au nom du jeu
 df_clean = df2.merge(df, right_on="Name", left_on="Game")
