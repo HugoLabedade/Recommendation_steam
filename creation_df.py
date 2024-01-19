@@ -53,4 +53,4 @@ condition = [
 values = [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5, 0]
 df_clean['Score'] = np.select(condition,values)
 
-df.to_csv("Dataset.csv")
+df.to_csv("Dataset.csv", index=False)
