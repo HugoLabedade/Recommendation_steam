@@ -38,19 +38,19 @@ df_clean.drop(columns="Name", inplace =True)
 #On calcule un score de user en fonction de son temps de jeu par rapport au temps de jeu moyen de tous les users
 condition = [
     df_clean['Heure_jouee']>= (df_clean["Average playtime forever"]),
-   (df_clean['Heure_jouee']>=0.9*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.8*df_clean["Average playtime forever"]),
-   (df_clean['Heure_jouee']>=0.8*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.6*df_clean["Average playtime forever"]),
-   (df_clean['Heure_jouee']>=0.7*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.4*df_clean["Average playtime forever"]),
-   (df_clean['Heure_jouee']>=0.6*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.8*df_clean["Average playtime forever"]),
-   (df_clean['Heure_jouee']>=0.5*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.6*df_clean["Average playtime forever"]),
+   (df_clean['Heure_jouee']>=0.9*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.9*df_clean["Average playtime forever"]),
+   (df_clean['Heure_jouee']>=0.8*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.8*df_clean["Average playtime forever"]),
+   (df_clean['Heure_jouee']>=0.7*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.7*df_clean["Average playtime forever"]),
+   (df_clean['Heure_jouee']>=0.6*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.6*df_clean["Average playtime forever"]),
+   (df_clean['Heure_jouee']>=0.5*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.5*df_clean["Average playtime forever"]),
    (df_clean['Heure_jouee']>=0.4*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.4*df_clean["Average playtime forever"]),
-   (df_clean['Heure_jouee']>=0.3*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.8*df_clean["Average playtime forever"]),
-   (df_clean['Heure_jouee']>=0.2*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.6*df_clean["Average playtime forever"]),
-   (df_clean['Heure_jouee']>=0.1*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.4*df_clean["Average playtime forever"]),
+   (df_clean['Heure_jouee']>=0.3*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.3*df_clean["Average playtime forever"]),
+   (df_clean['Heure_jouee']>=0.2*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.2*df_clean["Average playtime forever"]),
+   (df_clean['Heure_jouee']>=0.1*df_clean["Average playtime forever"])&(df_clean['Heure_jouee']<0.1*df_clean["Average playtime forever"]),
     df_clean['Heure_jouee']>=0
     
 ]
 values = [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5, 0]
 df_clean['Score'] = np.select(condition,values)
 
-df_clean.to_csv("Dataset.csv")
+df.to_csv("Dataset.csv")
