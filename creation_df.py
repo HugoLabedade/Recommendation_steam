@@ -17,9 +17,12 @@ min_heure(df, "Median playtime two weeks")
 #On charge le df des users
 df2 = pd.read_csv("./steam-200k.csv", names=["UserID", "Game", "purchase/play", "Heure_jouee", "0"])
 
+def supprimer_colonne(nom_dataset, colonne):
+    nom_dataset = nom_dataset.drop(columns=colonne,inplace = True)
+
 #On garde que les lignes "play" car purchase sert a rien
-df2 = df2.drop(df2[df2["purchase/play"] == "purchase"].index)
-df2.drop(columns =['0'],inplace =True)
+# df2 = df2.drop(df2[df2["purchase/play"] == "purchase"].index)
+supprimer_colonne(df2,'0')
 
 #On enlève des caractères spéciaux pour préparer le merge sur le nom des jeux
 def remplacement(nom_dataset, colonne, element):
@@ -38,7 +41,7 @@ remplacement(df2, 'Game', ' / Biohazard Revelations')
 
 #On merge les deux datasets par rapport au nom du jeu
 df_clean = df2.merge(df, right_on="Name", left_on="Game")
-df_clean.drop(columns="Name", inplace =True)
+supprimer_colonne(df_clean, "Name")
 #56789 lignes en commun
 
 
