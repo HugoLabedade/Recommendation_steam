@@ -21,7 +21,7 @@ def supprimer_colonne(nom_dataset, colonne):
     nom_dataset = nom_dataset.drop(columns=colonne,inplace = True)
 
 #On garde que les lignes "play" car purchase sert a rien
-# df2 = df2.drop(df2[df2["purchase/play"] == "purchase"].index)
+df2 = df2.drop(df2[df2["purchase/play"] == "purchase"].index)
 supprimer_colonne(df2,'0')
 
 #On enlève des caractères spéciaux pour préparer le merge sur le nom des jeux
