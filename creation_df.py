@@ -82,4 +82,7 @@ unique_ids = df_clean['UserID'].unique()
 name_to_id = {name: i + 1 for i, name in enumerate(unique_ids)}
 df_clean['UserID'] = df_clean['UserID'].map(name_to_id).astype(int)
 
+# Ajouter le preprocess pour Word2Vec ici
+# Lien du kaggle pour le preprocess : https://www.kaggle.com/code/pierremegret/gensim-word2vec-tutorial#Training-the-model
+
 df_clean.to_csv("data/Dataset.csv", index=False)
