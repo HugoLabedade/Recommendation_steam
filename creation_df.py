@@ -72,4 +72,14 @@ df_clean['Score'] = np.select(condition,values)
 #On attribue un tag True ou False pour savoir si le jeu est recommandable si le score >= 4
 df_clean["Recommandable"] = df_clean['Score'].apply(lambda x: True if x >= 4 else False)
 
+#"Normalisation" des UserID pour qu'ils soint plus petit en taille pour rentrer en mémoire dans le SVD
+unique_names = df_clean['Game'].unique()
+name_to_id = {name: i + 1 for i, name in enumerate(unique_names)}
+df_clean['GameID'] = df_clean['Game'].map(name_to_id).astype(int)
+
+df_clean['UserID'] = df_clean['UserID'].astype('Int64')
+unique_ids = df_clean['UserID'].unique()
+name_to_id = {name: i + 1 for i, name in enumerate(unique_ids)}
+df_clean['UserID'] = df_clean['UserID'].map(name_to_id).astype(int)
+
 df_clean.to_csv("Dataset.csv", index=False)
