@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-df = pd.read_csv("./csv_clean.csv")
+df = pd.read_csv("data/csv_clean.csv")
 df = df.drop('Unnamed: 0', axis=1)
 
 #le playtime de minutes en heures
@@ -15,7 +15,7 @@ min_heure(df, "Median playtime two weeks")
 
 
 #On charge le df des users
-df2 = pd.read_csv("./steam-200k.csv", names=["UserID", "Game", "purchase/play", "Heure_jouee", "0"])
+df2 = pd.read_csv("data/steam-200k.csv", names=["UserID", "Game", "purchase/play", "Heure_jouee", "0"])
 
 def supprimer_colonne(nom_dataset, colonne):
     nom_dataset = nom_dataset.drop(columns=colonne,inplace = True)
