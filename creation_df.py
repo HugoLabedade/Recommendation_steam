@@ -82,4 +82,4 @@ unique_ids = df_clean['UserID'].unique()
 name_to_id = {name: i + 1 for i, name in enumerate(unique_ids)}
 df_clean['UserID'] = df_clean['UserID'].map(name_to_id).astype(int)
 
-df_clean.to_csv("Dataset.csv", index=False)
+df_clean.to_csv("data/Dataset.csv", index=False)
