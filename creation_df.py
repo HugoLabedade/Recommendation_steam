@@ -42,6 +42,9 @@ remplacement(df2, 'Game', ' / Biohazard Revelations')
 #On merge les deux datasets par rapport au nom du jeu
 df_clean = df2.merge(df, right_on="Name", left_on="Game")
 supprimer_colonne(df_clean, "Name")
+df_clean = df_clean.astype({'UserID' : 'int', 'Game' : 'string', 'purchase/play' : 'string', 'Heure_jouee' : 'float', 'Release date' : 'string', 
+                            'About the game' : 'string', 'Reviews' : 'string', 'Notes' : 'string', 'Developers' : 'string', 'Publishers' : 'string',
+                           'Categories' : 'string', 'Genres' : 'string', 'Tags' : 'string'})
 #56789 lignes en commun
 
 
@@ -66,4 +69,4 @@ condition = [
 values = [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5, 0]
 df_clean['Score'] = np.select(condition,values)
 
-df_clean.to_csv("Dataset.csv")
+df_clean.to_csv("Dataset.csv", index=False)
