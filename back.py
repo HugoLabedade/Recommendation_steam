@@ -8,8 +8,8 @@ app = FastAPI()
 
 # Ouverture des csv
 df = pd.read_csv("data/Dataset.csv", usecols=["UserID", "Game", "Score", "GameID"])
-game_data = pd.read_csv("data/Dataset.csv", usecols=["GameID", "Game", "Categories", "About the game", "Genres"])
-game_data = game_data.rename(columns={"About the game": "About_the_game"})
+game_data = pd.read_csv("data/Dataset.csv", usecols=["GameID", "Game", "Categories", "About the game", "Genres", "Header image"])
+game_data = game_data.rename(columns={"About the game": "About_the_game", "Header image": "Header_image"})
 game_data = game_data.drop_duplicates()
 game_data = game_data.reset_index(drop=True)
 
@@ -36,11 +36,12 @@ def print_similar_games(game_data, game, V):
     
     sliced = V.T[:, :25] # utilisation seulement des K features latentes les plus importantes
     top_indexes = top_cosine_similarity(sliced, game, 5)
-    jeu_reco = {"Jeux": [], "Description": [], "Genre": []}
+    jeu_reco = {"Jeux": [], "Description": [], "Genre": [], "Image": []}
     for id in top_indexes + 1:
         jeu_reco["Jeux"].append(game_data[game_data.GameID == id].Game.values[0])
         jeu_reco["Description"].append(game_data[game_data.GameID == id].About_the_game.values[0])
         jeu_reco["Genre"].append(game_data[game_data.GameID == id].Genres.values[0])
+        jeu_reco["Image"].append(game_data[game_data.GameID == id].Header_image.values[0])
     return jeu_reco
 
 # Modèle factice pour la démonstration
@@ -49,7 +50,7 @@ def run_machine_learning_model(prompt):
     global Vh
     # Placeholder - Exécutez votre modèle sur le prompt
     liste_jeux = print_similar_games(game_data, prompt, Vh)
-    result = pd.DataFrame({"Jeux": liste_jeux["Jeux"], "Description": liste_jeux["Description"], "Genres": liste_jeux["Genre"]})
+    result = pd.DataFrame({"Jeux": liste_jeux["Jeux"], "Description": liste_jeux["Description"], "Genres": liste_jeux["Genre"], "Image": liste_jeux["Image"]})
     return result
 
 class PromptRequest(BaseModel):
