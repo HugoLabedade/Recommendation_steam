@@ -3,11 +3,14 @@ from pydantic import BaseModel
 #from main_svd import print_similar_games
 import numpy as np
 import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 np.seterr(divide='ignore', invalid='ignore')
 app = FastAPI()
 
 # Ouverture des csv
 df = pd.read_csv("data/Dataset.csv", usecols=["UserID", "Game", "Score", "GameID"])
+
 game_data = pd.read_csv("data/Dataset.csv", usecols=["GameID", "Game", "Categories", "About the game", "Genres", "Header image"])
 game_data = game_data.rename(columns={"About the game": "About_the_game", "Header image": "Header_image"})
 game_data = game_data.drop_duplicates()
@@ -24,6 +27,7 @@ U, S, Vh = np.linalg.svd(A, full_matrices=True)
 
 def top_cosine_similarity(data, game, top_n=5):
     index = game_data[game_data.Game == game].GameID.values[0] # game id starts from 1 in the dataset
+    print(index, game_data[game_data.Game == game].Game.values[0])
     game_row = data[index, :]
     magnitude = np.sqrt(np.einsum('ij, ij -> i', data, data))
     similarity = np.dot(game_row, data.T) / (magnitude[index] * magnitude)
@@ -33,7 +37,7 @@ def top_cosine_similarity(data, game, top_n=5):
 # fonction pour imprimer les titres des top 10 games les plus similaires à un jeu donné
 
 def print_similar_games(game_data, game, V):
-    
+    print(V.T[:, :25])
     sliced = V.T[:, :25] # utilisation seulement des K features latentes les plus importantes
     top_indexes = top_cosine_similarity(sliced, game, 5)
     jeu_reco = {"Jeux": [], "Description": [], "Genre": [], "Image": []}
@@ -44,6 +48,8 @@ def print_similar_games(game_data, game, V):
         jeu_reco["Image"].append(game_data[game_data.GameID == id].Header_image.values[0])
     return jeu_reco
 
+
+
 # Modèle factice pour la démonstration
 # Ici, vous utiliseriez votre propre modèle de machine learning
 def run_machine_learning_model(prompt):
@@ -53,6 +59,10 @@ def run_machine_learning_model(prompt):
     result = pd.DataFrame({"Jeux": liste_jeux["Jeux"], "Description": liste_jeux["Description"], "Genres": liste_jeux["Genre"], "Image": liste_jeux["Image"]})
     return result
 
+def par_categorie():
+    game_data
+    return result_categorie 
+
 class PromptRequest(BaseModel):
     prompt: str
 
@@ -60,3 +70,8 @@ class PromptRequest(BaseModel):
 async def run_model(prompt_request: PromptRequest):
         result = run_machine_learning_model(prompt_request.prompt)
         return {"result": result}
+
+@app.post("/run_model/")
+async def run_model(prompt_request: PromptRequest):
+        result_categorie = par_categorie(prompt_request.prompt)
+        return {"result_categorie": result_categorie}
