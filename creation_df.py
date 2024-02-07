@@ -1,6 +1,14 @@
 import pandas as pd
 import numpy as np
+from time import time
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+from gensim.models import Phrases
+from gensim.models.phrases import Phraser
+import string
 
+t = time()
 
 df = pd.read_csv("data/csv_clean.csv")
 df = df.drop('Unnamed: 0', axis=1)
@@ -27,6 +35,7 @@ supprimer_colonne(df2,'0')
 #On enlève des caractères spéciaux pour préparer le merge sur le nom des jeux
 def remplacement(nom_dataset, colonne, element):
     nom_dataset[colonne] = nom_dataset[colonne].str.replace(element,'')
+
 remplacement(df, 'Name', ':')
 remplacement(df, 'Name', '®')
 remplacement(df, 'Name', '™')
@@ -67,7 +76,7 @@ condition = [
 ]
 
 values = [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5, 0]
-df_clean['Score'] = np.select(condition,values)
+df_clean['Score'] = np.select(condition,values) 
 
 #On attribue un tag True ou False pour savoir si le jeu est recommandable si le score >= 4
 df_clean["Recommandable"] = df_clean['Score'].apply(lambda x: True if x >= 4 else False)
@@ -86,3 +95,5 @@ df_clean['UserID'] = df_clean['UserID'].map(name_to_id).astype(int)
 # Lien du kaggle pour le preprocess : https://www.kaggle.com/code/pierremegret/gensim-word2vec-tutorial#Training-the-model
 
 df_clean.to_csv("data/Dataset.csv", index=False)
+
+print('Time to clean up everything: {} mins'.format(round((time() - t) / 60, 2)))
