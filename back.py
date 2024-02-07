@@ -3,8 +3,7 @@ from pydantic import BaseModel
 #from main_svd import print_similar_games
 import numpy as np
 import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
+from fastapi.responses import JSONResponse 
 np.seterr(divide='ignore', invalid='ignore')
 app = FastAPI()
 
@@ -24,6 +23,19 @@ normalised_mat = ratings_mat - np.asarray([(np.mean(ratings_mat, 1))]).T
 # ultérieure normalisation et transposition pour passer à la matrice A "classique"
 A = normalised_mat.T / np.sqrt(ratings_mat.shape[0] - 1)
 U, S, Vh = np.linalg.svd(A, full_matrices=True)
+
+# fonction pour faire une liste des catégories et enlever les doublons
+def clean_liste():
+    liste = game_data["Genres"].dropna().unique().tolist()
+    new_list = []
+    for i in liste:
+        if',' in i:
+            split_items = i.split(',')
+            new_list.extend(split_items)
+        else:
+            new_list.append(i)
+    new_list = list(set(new_list))
+    return new_list
 
 def top_cosine_similarity(data, game, top_n=5):
     index = game_data[game_data.Game == game].GameID.values[0] # game id starts from 1 in the dataset
@@ -48,20 +60,23 @@ def print_similar_games(game_data, game, V):
         jeu_reco["Image"].append(game_data[game_data.GameID == id].Header_image.values[0])
     return jeu_reco
 
+def df_catego(genre):
+    counts = df['GameID'].value_counts()
+    tri = df['GameID'].isin(counts[counts >= 20].index)
+    tri = df[tri]
+    grouped = tri.groupby("GameID", as_index=False).mean("Score")
+    df_catego = game_data.join(grouped, how='inner', lsuffix="ID")
+    catego = df_catego[df_catego["Genres"] == genre].sort_values(by="Score", ascending=False).head()
+    catego = catego.drop("GameIDID", axis=1)
+    catego = pd.DataFrame({"Game": catego["Game"], "About_the_game": catego["About_the_game"], "Header_image": catego["Header_image"], "Categories": catego["Categories"], "Genres": catego["Genres"], "GameID": catego["GameID"], "Score": catego["Score"]})
+    return catego
 
-
-# Modèle factice pour la démonstration
-# Ici, vous utiliseriez votre propre modèle de machine learning
 def run_machine_learning_model(prompt):
     global Vh
-    # Placeholder - Exécutez votre modèle sur le prompt
     liste_jeux = print_similar_games(game_data, prompt, Vh)
     result = pd.DataFrame({"Jeux": liste_jeux["Jeux"], "Description": liste_jeux["Description"], "Genres": liste_jeux["Genre"], "Image": liste_jeux["Image"]})
     return result
 
-def par_categorie():
-    game_data
-    return result_categorie 
 
 class PromptRequest(BaseModel):
     prompt: str
@@ -71,7 +86,16 @@ async def run_model(prompt_request: PromptRequest):
         result = run_machine_learning_model(prompt_request.prompt)
         return {"result": result}
 
-@app.post("/run_model/")
-async def run_model(prompt_request: PromptRequest):
-        result_categorie = par_categorie(prompt_request.prompt)
+@app.post("/choose_categories/")
+async def choose_categories():
+        result_categorie = clean_liste()
         return {"result_categorie": result_categorie}
+
+class GenreRequest(BaseModel):
+    genre: str
+
+@app.post("/dataset_catego/")
+async def dataset_catego(demande: GenreRequest):
+        print(demande.genre)
+        catego = df_catego(demande.genre)
+        return {"catego": catego}

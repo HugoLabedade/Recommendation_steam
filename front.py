@@ -8,6 +8,8 @@ st.set_page_config(layout="wide")
 
 # URL de l'API FastAPI
 API_URL = "http://localhost:8000/run_model/"  # Mettez à jour avec votre URL si nécessaire
+API_URL2 = "http://localhost:8000/choose_categories/"
+API_URL3 = "http://localhost:8000/dataset_catego/"
 
 game_data = pd.read_csv("data/Dataset.csv", usecols=["Game"])
 game_data = game_data.drop_duplicates()
@@ -19,7 +21,7 @@ st.header("", divider="rainbow")
 
 
 model = st.radio("Sélectionner le type de recommandation que vous souhaitez",
-                 ["Par catégorie", "Par note des users"])
+                 ["Par catégorie", "Par note des users"], index=None)
 if model == "Par note des users":
     def search(searchterm: str) -> list[tuple[str, any]]:
         liste = []
@@ -58,4 +60,18 @@ if model == "Par note des users":
                 display_image_on_hover(i, genre, url, description, jeu)
 
 elif model == "Par catégorie":
-    print("caca")
+    st.header("", divider="rainbow")
+    response2 = requests.post(API_URL2)
+    resultat = response2.json()["result_categorie"]
+    rad = st.radio("Choisissez la catégorie:", resultat, index=None)
+
+    if rad != None:
+        response45 = requests.post(API_URL3, json={"genre": rad})
+        print(response45)
+        resultat3 = response45.json()["catego"]
+        print(resultat3)
+        #print(resultat3)
+            #print("CACAAAAAAAAAAAAAAAAAAA")
+            #resultat2 = response.json()["df_categorie"]
+            #print(resultat2)
+            #st.write(resultat2)
