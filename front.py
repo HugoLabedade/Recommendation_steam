@@ -75,3 +75,4 @@ elif model == "Par catégorie":
             #resultat2 = response.json()["df_categorie"]
             #print(resultat2)
             #st.write(resultat2)
+ 

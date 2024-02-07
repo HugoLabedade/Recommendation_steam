@@ -99,3 +99,4 @@ async def dataset_catego(demande: GenreRequest):
         print(demande.genre)
         catego = df_catego(demande.genre)
         return {"catego": catego}
+ 
