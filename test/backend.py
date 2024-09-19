@@ -7,6 +7,7 @@ from typing import List, Dict
 from sentence_transformers import SentenceTransformer, util
 import torch
 import jwt
+import pandas as pd
 
 app = FastAPI()
 
@@ -139,32 +140,74 @@ async def add_favorite(game: Game, current_user: dict = Depends(get_current_user
 async def get_favorites(current_user: dict = Depends(get_current_user)):
     return favorites[current_user['username']]
 
+# # Chargement du modèle Sentence Transformer
+# model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
+# # Charger et préparer les données (à remplacer par votre propre base de données de jeux)
+# games_df = pd.DataFrame({
+#     'title': ['The Witcher 3', 'Minecraft', 'FIFA 22', 'Doom Eternal', 'Stardew Valley', 'Zelda: Breath of the Wild'],
+#     'description': [
+#         'Action RPG médiéval fantastique avec un monde ouvert',
+#         'Jeu de survie et de construction en monde ouvert',
+#         'Simulation de football réaliste',
+#         'FPS rapide et brutal dans un univers futuriste',
+#         'Jeu de simulation de ferme et de vie rurale',
+#         'Jeu d\'aventure en monde ouvert avec des énigmes et de l\'exploration'
+#     ]
+# })
+
+# # Encoder les descriptions de jeux
+# games_embeddings = model.encode(games_df['description'].tolist(), convert_to_tensor=True)
+
+# class Query(BaseModel):
+#     query: str
+
+# @app.post("/recommend")
+# async def recommend_games(query: Query):
+#     # Encoder la requête de l'utilisateur
+#     query_embedding = model.encode(query.query, convert_to_tensor=True)
+    
+#     # Calculer la similarité cosinus
+#     cos_scores = util.cos_sim(query_embedding, games_embeddings)[0]
+    
+#     # Trier les jeux par similarité
+#     top_results = torch.topk(cos_scores, k=len(games_df))
+    
+#     recommended_games = [
+#         {
+#             'title': games_df.iloc[idx.item()]['title'],
+#             'description': games_df.iloc[idx.item()]['description'],
+#             'score': score.item()
+#         }
+#         for score, idx in zip(top_results.values, top_results.indices)
+#     ]
+    
+#     return {"recommended_games": recommended_games}
+
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 # Chargement du modèle Sentence Transformer
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
-# Données de jeux (à remplacer par une vraie base de données de jeux)
-games = [
-    {"title": "The Witcher 3", "description": "Action RPG médiéval fantastique avec un monde ouvert"},
-    {"title": "Minecraft", "description": "Jeu de survie et de construction en monde ouvert"},
-    {"title": "FIFA 22", "description": "Simulation de football réaliste"},
-    {"title": "Doom Eternal", "description": "FPS rapide et brutal dans un univers futuriste"},
-    {"title": "Stardew Valley", "description": "Jeu de simulation de ferme et de vie rurale"},
-    {"title": "Zelda: Breath of the Wild", "description": "Jeu d'aventure en monde ouvert avec des énigmes et de l'exploration"}
-]
+# Chargement des données de jeux depuis cleangames.csv
+df = pd.read_csv('cleangames.csv')
+games = df[['name', 'summary']].to_dict('records')
 
 # Encodage des descriptions de jeux
-games_embeddings = model.encode([game['description'] for game in games], convert_to_tensor=True)
+games_embeddings = model.encode([game['summary'] for game in games], convert_to_tensor=True)
 
 @app.post("/recommend")
 async def recommend_games(request: RecommendRequest, current_user: dict = Depends(get_current_user)):
     query_embedding = model.encode(request.query, convert_to_tensor=True)
     cos_scores = util.cos_sim(query_embedding, games_embeddings)[0]
-    top_results = torch.topk(cos_scores, k=len(games))
+    top_results = torch.topk(cos_scores, k=min(10, len(games)))  # Limite à 10 recommandations maximum
     
     recommended_games = [
         {
-            "title": games[idx]['title'],
-            "description": games[idx]['description'],
+            "title": games[idx]['name'],
+            "description": games[idx]['summary'],
             "score": score.item()
         }
         for score, idx in zip(top_results.values, top_results.indices)
