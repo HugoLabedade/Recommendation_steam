@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer, util
 import torch
 import jwt
 import pandas as pd
+import numpy as np
 
 app = FastAPI()
 
@@ -46,6 +47,20 @@ class Game(BaseModel):
 # Configuration de la sécurité
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# Définir le dispositif à utiliser (GPU si disponible, sinon CPU)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
+# Chargement du modèle Sentence Transformer
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2').to(device)
+
+# Chargement des données de jeux depuis encoded_games.csv avec les résumés préencodés
+print("Chargement des données encodées...")
+df = pd.read_csv('encoded_games.csv')
+df['encoded_summary'] = df['encoded_summary'].apply(lambda x: np.fromstring(x[1:-1], sep=', ', dtype=np.float32))
+games = df[['name', 'summary', 'encoded_summary']].to_dict('records')
+games_embeddings = torch.tensor([game['encoded_summary'] for game in games], dtype=torch.float32).to(device)
 
 # Fonctions utilitaires
 def verify_password(plain_password, hashed_password):
@@ -140,67 +155,9 @@ async def add_favorite(game: Game, current_user: dict = Depends(get_current_user
 async def get_favorites(current_user: dict = Depends(get_current_user)):
     return favorites[current_user['username']]
 
-# # Chargement du modèle Sentence Transformer
-# model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-
-# # Charger et préparer les données (à remplacer par votre propre base de données de jeux)
-# games_df = pd.DataFrame({
-#     'title': ['The Witcher 3', 'Minecraft', 'FIFA 22', 'Doom Eternal', 'Stardew Valley', 'Zelda: Breath of the Wild'],
-#     'description': [
-#         'Action RPG médiéval fantastique avec un monde ouvert',
-#         'Jeu de survie et de construction en monde ouvert',
-#         'Simulation de football réaliste',
-#         'FPS rapide et brutal dans un univers futuriste',
-#         'Jeu de simulation de ferme et de vie rurale',
-#         'Jeu d\'aventure en monde ouvert avec des énigmes et de l\'exploration'
-#     ]
-# })
-
-# # Encoder les descriptions de jeux
-# games_embeddings = model.encode(games_df['description'].tolist(), convert_to_tensor=True)
-
-# class Query(BaseModel):
-#     query: str
-
-# @app.post("/recommend")
-# async def recommend_games(query: Query):
-#     # Encoder la requête de l'utilisateur
-#     query_embedding = model.encode(query.query, convert_to_tensor=True)
-    
-#     # Calculer la similarité cosinus
-#     cos_scores = util.cos_sim(query_embedding, games_embeddings)[0]
-    
-#     # Trier les jeux par similarité
-#     top_results = torch.topk(cos_scores, k=len(games_df))
-    
-#     recommended_games = [
-#         {
-#             'title': games_df.iloc[idx.item()]['title'],
-#             'description': games_df.iloc[idx.item()]['description'],
-#             'score': score.item()
-#         }
-#         for score, idx in zip(top_results.values, top_results.indices)
-#     ]
-    
-#     return {"recommended_games": recommended_games}
-
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-# Chargement du modèle Sentence Transformer
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-
-# Chargement des données de jeux depuis cleangames.csv
-df = pd.read_csv('cleangames.csv')
-games = df[['name', 'summary']].to_dict('records')
-
-# Encodage des descriptions de jeux
-games_embeddings = model.encode([game['summary'] for game in games], convert_to_tensor=True)
-
 @app.post("/recommend")
 async def recommend_games(request: RecommendRequest, current_user: dict = Depends(get_current_user)):
-    query_embedding = model.encode(request.query, convert_to_tensor=True)
+    query_embedding = model.encode(request.query, convert_to_tensor=True).to(device).float()
     cos_scores = util.cos_sim(query_embedding, games_embeddings)[0]
     top_results = torch.topk(cos_scores, k=min(10, len(games)))  # Limite à 10 recommandations maximum
     

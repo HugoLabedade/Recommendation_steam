@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+from sentence_transformers import SentenceTransformer
 
 # Charger le dataset
 df = pd.read_csv('gamesIGDB.csv')  # Remplacez par le nom de votre fichier
@@ -40,5 +41,24 @@ print(f"Nombre de lignes après le nettoyage : {len(df)}")
 # Afficher quelques exemples pour vérification
 print(df['summary'].head())
 
-# Sauvegarder le dataset nettoyé
-df.to_csv('cleangames.csv', index=False)
+# Chargement du modèle Sentence Transformer
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
+# Chargement des données de jeux depuis cleangames.csv
+
+# Fonction pour encoder un résumé
+def encode_summary(summary):
+    return model.encode(summary)
+
+# Encodage des résumés
+print("Encodage des résumés...")
+df['encoded_summary'] = df['summary'].apply(encode_summary)
+
+# Conversion des encodages en chaînes de caractères pour le stockage CSV
+df['encoded_summary'] = df['encoded_summary'].apply(lambda x: ','.join(map(str, x)))
+
+# Sauvegarde du DataFrame enrichi dans un nouveau fichier CSV
+print("Sauvegarde des données encodées...")
+df.to_csv('encoded_games.csv', index=False)
+
+print("Prétraitement terminé. Les données encodées sont sauvegardées dans 'encoded_games.csv'.")
