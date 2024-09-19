@@ -57,7 +57,7 @@ if not st.session_state.token:
             if result:
                 st.session_state.token = result['access_token']
                 st.success("Connexion réussie!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Échec de la connexion. Veuillez vérifier vos identifiants.")
 
@@ -68,7 +68,15 @@ if not st.session_state.token:
         if st.button("S'inscrire"):
             result = register(new_username, new_password)
             if result:
-                st.success("Inscription réussie! Vous pouvez maintenant vous connecter.")
+                st.success("Inscription réussie!")
+                # Connexion automatique après inscription
+                login_result = login(new_username, new_password)
+                if login_result:
+                    st.session_state.token = login_result['access_token']
+                    st.success("Vous êtes maintenant connecté!")
+                    st.rerun()
+                else:
+                    st.error("Inscription réussie, mais erreur lors de la connexion automatique. Veuillez vous connecter manuellement.")
             else:
                 st.error("Échec de l'inscription. Ce nom d'utilisateur est peut-être déjà pris.")
 
@@ -77,7 +85,7 @@ else:
     st.sidebar.success("Connecté avec succès!")
     if st.sidebar.button("Se déconnecter"):
         st.session_state.token = None
-        st.experimental_rerun()
+        st.rerun()
 
     # Onglets principaux
     tab1, tab2, tab3 = st.tabs(["Recommandations", "Profil", "Amis"])
