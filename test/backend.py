@@ -181,6 +181,12 @@ async def reject_friend_request(friend_username: str, current_user: dict = Depen
 async def get_friends(current_user: dict = Depends(get_current_user)):
     return [UserOut(username=friend) for friend in friendships[current_user['username']]]
 
+@app.get("/friend_favorites/{friend_username}")
+async def get_friend_favorites(friend_username: str, current_user: dict = Depends(get_current_user)):
+    if friend_username not in friendships[current_user['username']]:
+        raise HTTPException(status_code=404, detail="Friend not found")
+    return favorites.get(friend_username, [])
+
 @app.delete("/remove_friend/{friend_username}")
 async def remove_friend(friend_username: str, current_user: dict = Depends(get_current_user)):
     if friend_username not in friendships[current_user['username']]:
