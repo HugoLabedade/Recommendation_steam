@@ -4,6 +4,7 @@
 # from datetime import datetime, timedelta
 # from typing import List, Dict
 # from sentence_transformers import SentenceTransformer, util
+# from transformers import AutoTokenizer, AutoModel
 # import torch
 # import jwt
 # import pandas as pd
@@ -51,8 +52,15 @@
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # print(f"Using device: {device}")
 
-# # Chargement du modèle Sentence Transformer
-# model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2').to(device)
+# # Chargement du modèle Sentence Transformer avec configuration explicite du tokenizer
+# model_name = 'sentence-transformers/all-MiniLM-L6-v2'
+# tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+# tokenizer.model_max_length = 512
+# tokenizer.clean_up_tokenization_spaces = True
+
+# model = SentenceTransformer(model_name)
+# model.tokenizer = tokenizer
+# model.to(device)
 
 # # Chargement des données de jeux depuis encoded_games.csv avec les résumés préencodés
 # print("Chargement des données encodées...")
@@ -151,8 +159,11 @@
 
 # @app.post("/add_favorite")
 # async def add_favorite(game: Game, current_user: dict = Depends(get_current_user)):
-#     favorites[current_user['username']].append(game.dict())
-#     return {"message": f"Le jeu {game.title} a été ajouté à vos favoris"}
+#     if game.dict() not in favorites[current_user['username']]:
+#         favorites[current_user['username']].append(game.dict())
+#         return {"message": f"Le jeu {game.title} a été ajouté à vos favoris"}
+#     else:
+#         return {"message": f"Le jeu {game.title} est déjà dans vos favoris"}
 
 # @app.get("/favorites", response_model=List[Game])
 # async def get_favorites(current_user: dict = Depends(get_current_user)):
@@ -160,7 +171,7 @@
 
 # @app.post("/recommend")
 # async def recommend_games(request: RecommendRequest, current_user: dict = Depends(get_current_user)):
-#     query_embedding = model.encode(request.query, convert_to_tensor=True).to(device).float()
+#     query_embedding = model.encode(request.query, convert_to_tensor=True)
 #     cos_scores = util.cos_sim(query_embedding, games_embeddings)[0]
 #     top_results = torch.topk(cos_scores, k=min(10, len(games)))  # Limite à 10 recommandations maximum
     
@@ -236,7 +247,7 @@ print(f"Using device: {device}")
 # Chargement du modèle Sentence Transformer avec configuration explicite du tokenizer
 model_name = 'sentence-transformers/all-MiniLM-L6-v2'
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-tokenizer.model_max_length = 512  # ou toute autre valeur appropriée
+tokenizer.model_max_length = 512
 tokenizer.clean_up_tokenization_spaces = True
 
 model = SentenceTransformer(model_name)
@@ -340,8 +351,20 @@ async def get_friends(current_user: dict = Depends(get_current_user)):
 
 @app.post("/add_favorite")
 async def add_favorite(game: Game, current_user: dict = Depends(get_current_user)):
-    favorites[current_user['username']].append(game.dict())
-    return {"message": f"Le jeu {game.title} a été ajouté à vos favoris"}
+    if game.dict() not in favorites[current_user['username']]:
+        favorites[current_user['username']].append(game.dict())
+        return {"message": f"Le jeu {game.title} a été ajouté à vos favoris"}
+    else:
+        return {"message": f"Le jeu {game.title} est déjà dans vos favoris"}
+
+@app.delete("/remove_favorite/{game_title}")
+async def remove_favorite(game_title: str, current_user: dict = Depends(get_current_user)):
+    user_favorites = favorites[current_user['username']]
+    for game in user_favorites:
+        if game['title'] == game_title:
+            user_favorites.remove(game)
+            return {"message": f"Le jeu {game_title} a été supprimé de vos favoris"}
+    raise HTTPException(status_code=404, detail="Game not found in favorites")
 
 @app.get("/favorites", response_model=List[Game])
 async def get_favorites(current_user: dict = Depends(get_current_user)):
@@ -351,7 +374,7 @@ async def get_favorites(current_user: dict = Depends(get_current_user)):
 async def recommend_games(request: RecommendRequest, current_user: dict = Depends(get_current_user)):
     query_embedding = model.encode(request.query, convert_to_tensor=True)
     cos_scores = util.cos_sim(query_embedding, games_embeddings)[0]
-    top_results = torch.topk(cos_scores, k=min(10, len(games)))  # Limite à 10 recommandations maximum
+    top_results = torch.topk(cos_scores, k=min(10, len(games)))
     
     recommended_games = [
         {
