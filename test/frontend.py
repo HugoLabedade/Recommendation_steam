@@ -11,14 +11,34 @@ def login(username, password):
     response = requests.post(f"{API_URL}/token", data={"username": username, "password": password})
     return response.json() if response.status_code == 200 else None
 
-def add_friend(friend_username, token):
+def send_friend_request(friend_username, token):
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.post(f"{API_URL}/add_friend/{friend_username}", headers=headers)
+    response = requests.post(f"{API_URL}/send_friend_request/{friend_username}", headers=headers)
+    return response.json() if response.status_code == 200 else None
+
+def get_friend_requests(token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(f"{API_URL}/friend_requests", headers=headers)
+    return response.json() if response.status_code == 200 else None
+
+def accept_friend_request(friend_username, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.post(f"{API_URL}/accept_friend_request/{friend_username}", headers=headers)
+    return response.json() if response.status_code == 200 else None
+
+def reject_friend_request(friend_username, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.post(f"{API_URL}/reject_friend_request/{friend_username}", headers=headers)
     return response.json() if response.status_code == 200 else None
 
 def get_friends(token):
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f"{API_URL}/friends", headers=headers)
+    return response.json() if response.status_code == 200 else None
+
+def remove_friend(friend_username, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.delete(f"{API_URL}/remove_friend/{friend_username}", headers=headers)
     return response.json() if response.status_code == 200 else None
 
 def recommend_games(query, token):
@@ -136,9 +156,11 @@ else:
     with tab2:
         # Profil utilisateur
         st.header("Votre profil")
+        
+        # Affichage des favoris
+        st.subheader("Vos jeux favoris:")
         st.session_state.favorites = get_favorites(st.session_state.token)
         if st.session_state.favorites:
-            st.subheader("Vos jeux favoris:")
             for i, game in enumerate(st.session_state.favorites, 1):
                 col1, col2 = st.columns([3, 1])
                 with col1:
@@ -160,19 +182,60 @@ else:
     with tab3:
         # Système d'amis
         st.header("Amis")
-        new_friend = st.text_input("Ajouter un ami")
-        if st.button("Ajouter"):
-            result = add_friend(new_friend, st.session_state.token)
-            if result:
-                st.success("Ami ajouté avec succès!")
-            else:
-                st.error("Impossible d'ajouter cet ami.")
 
+        # Envoi de demande d'ami
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            new_friend = st.text_input("Envoyer une demande d'ami")
+        with col2:
+            if st.button("Envoyer la demande", use_container_width=True):
+                result = send_friend_request(new_friend, st.session_state.token)
+                if result:
+                    st.success(result['message'])
+                else:
+                    st.error("Impossible d'envoyer la demande d'ami.")
+
+        # Affichage des demandes d'amitié
+        friend_requests = get_friend_requests(st.session_state.token)
+        if friend_requests:
+            st.subheader("Demandes d'amitié en attente:")
+            for request in friend_requests:
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.write(request)
+                with col2:
+                    if st.button("Accepter", key=f"accept_{request}", use_container_width=True):
+                        result = accept_friend_request(request, st.session_state.token)
+                        if result:
+                            st.success(result['message'])
+                            st.rerun()
+                        else:
+                            st.error("Erreur lors de l'acceptation de la demande.")
+                with col3:
+                    if st.button("Refuser", key=f"reject_{request}", use_container_width=True):
+                        result = reject_friend_request(request, st.session_state.token)
+                        if result:
+                            st.success(result['message'])
+                            st.rerun()
+                        else:
+                            st.error("Erreur lors du refus de la demande.")
+        
+        # Liste d'amis
         friends = get_friends(st.session_state.token)
         if friends:
             st.subheader("Liste d'amis:")
             for friend in friends:
-                st.write(f"- {friend['username']}")
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.write(f"- {friend['username']}")
+                with col2:
+                    if st.button("Retirer", key=f"remove_friend_{friend['username']}", use_container_width=True):
+                        result = remove_friend(friend['username'], st.session_state.token)
+                        if result:
+                            st.success(result['message'])
+                            st.rerun()
+                        else:
+                            st.error("Erreur lors de la suppression de l'ami.")
         else:
             st.info("Vous n'avez pas encore d'amis.")
 

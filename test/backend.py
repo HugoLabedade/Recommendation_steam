@@ -18,10 +18,11 @@ SECRET_KEY = "votre_clé_secrète_ici"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Structure de données en mémoire pour stocker les utilisateurs, les amitiés et les favoris
+# Structure de données en mémoire pour stocker les utilisateurs, les amitiés, les favoris et les demandes d'amitié
 users: Dict[str, Dict] = {}
 friendships: Dict[str, List[str]] = {}
 favorites: Dict[str, List[Dict]] = {}
+friend_requests: Dict[str, List[str]] = {}
 
 # Modèles de données
 class UserCreate(BaseModel):
@@ -127,6 +128,7 @@ def register(user: UserCreate):
     users[user.username] = {"username": user.username, "hashed_password": hashed_password}
     friendships[user.username] = []
     favorites[user.username] = []
+    friend_requests[user.username] = []
     return UserOut(username=user.username)
 
 @app.post("/token", response_model=Token)
@@ -144,18 +146,48 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/add_friend/{friend_username}")
-async def add_friend(friend_username: str, current_user: dict = Depends(get_current_user)):
+@app.post("/send_friend_request/{friend_username}")
+async def send_friend_request(friend_username: str, current_user: dict = Depends(get_current_user)):
     if friend_username not in users:
         raise HTTPException(status_code=404, detail="User not found")
     if friend_username in friendships[current_user['username']]:
         raise HTTPException(status_code=400, detail="Already friends")
+    if current_user['username'] in friend_requests[friend_username]:
+        raise HTTPException(status_code=400, detail="Friend request already sent")
+    friend_requests[friend_username].append(current_user['username'])
+    return {"message": f"Friend request sent to {friend_username}"}
+
+@app.get("/friend_requests", response_model=List[str])
+async def get_friend_requests(current_user: dict = Depends(get_current_user)):
+    return friend_requests[current_user['username']]
+
+@app.post("/accept_friend_request/{friend_username}")
+async def accept_friend_request(friend_username: str, current_user: dict = Depends(get_current_user)):
+    if friend_username not in friend_requests[current_user['username']]:
+        raise HTTPException(status_code=404, detail="Friend request not found")
+    friend_requests[current_user['username']].remove(friend_username)
     friendships[current_user['username']].append(friend_username)
-    return {"message": f"Friend {friend_username} added successfully"}
+    friendships[friend_username].append(current_user['username'])
+    return {"message": f"Friend request from {friend_username} accepted"}
+
+@app.post("/reject_friend_request/{friend_username}")
+async def reject_friend_request(friend_username: str, current_user: dict = Depends(get_current_user)):
+    if friend_username not in friend_requests[current_user['username']]:
+        raise HTTPException(status_code=404, detail="Friend request not found")
+    friend_requests[current_user['username']].remove(friend_username)
+    return {"message": f"Friend request from {friend_username} rejected"}
 
 @app.get("/friends", response_model=List[UserOut])
 async def get_friends(current_user: dict = Depends(get_current_user)):
     return [UserOut(username=friend) for friend in friendships[current_user['username']]]
+
+@app.delete("/remove_friend/{friend_username}")
+async def remove_friend(friend_username: str, current_user: dict = Depends(get_current_user)):
+    if friend_username not in friendships[current_user['username']]:
+        raise HTTPException(status_code=404, detail="Friend not found")
+    friendships[current_user['username']].remove(friend_username)
+    friendships[friend_username].remove(current_user['username'])
+    return {"message": f"Friend {friend_username} removed successfully"}
 
 @app.post("/add_favorite")
 async def add_favorite(game: Game, current_user: dict = Depends(get_current_user)):
