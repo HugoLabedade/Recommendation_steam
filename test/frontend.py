@@ -184,23 +184,26 @@ else:
         st.header("Amis")
 
         # Envoi de demande d'ami
-        col1, col2, col3 = st.columns([2, 1, 1])
+        col1, col2 = st.columns([1, 1])
         with col1:
-            new_friend = st.text_input("Envoyer une demande d'ami")
+            new_friend = st.text_input("Envoyer une demande d'ami", label_visibility="collapsed")
         with col2:
             if st.button("Envoyer la demande", use_container_width=True):
-                result = send_friend_request(new_friend, st.session_state.token)
-                if result:
-                    st.success(result['message'])
+                if new_friend:
+                    result = send_friend_request(new_friend, st.session_state.token)
+                    if result:
+                        st.success(result['message'])
+                    else:
+                        st.error("Impossible d'envoyer la demande d'ami.")
                 else:
-                    st.error("Impossible d'envoyer la demande d'ami.")
+                    st.warning("Veuillez entrer un nom d'utilisateur.")
 
         # Affichage des demandes d'amitié
         friend_requests = get_friend_requests(st.session_state.token)
         if friend_requests:
             st.subheader("Demandes d'amitié en attente:")
             for request in friend_requests:
-                col1, col2, col3 = st.columns([2, 1, 1])
+                col1, col2, col3 = st.columns([3, 1, 1])
                 with col1:
                     st.write(request)
                 with col2:
@@ -219,13 +222,13 @@ else:
                             st.rerun()
                         else:
                             st.error("Erreur lors du refus de la demande.")
-        
+
         # Liste d'amis
         friends = get_friends(st.session_state.token)
         if friends:
             st.subheader("Liste d'amis:")
             for friend in friends:
-                col1, col2 = st.columns([3, 1])
+                col1, col2 = st.columns([5, 1])
                 with col1:
                     st.write(f"- {friend['username']}")
                 with col2:
@@ -238,6 +241,16 @@ else:
                             st.error("Erreur lors de la suppression de l'ami.")
         else:
             st.info("Vous n'avez pas encore d'amis.")
+
+    # Ajoutez ce style CSS personnalisé pour réduire la taille des boutons
+    st.markdown("""
+    <style>
+        .stButton>button {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 st.sidebar.header("À propos")
 st.sidebar.info(
