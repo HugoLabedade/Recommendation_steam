@@ -41,6 +41,11 @@ def get_friends(token):
     response = requests.get(f"{API_URL}/friends", headers=headers)
     return response.json() if response.status_code == 200 else None
 
+def get_friend_favorites(friend_username, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(f"{API_URL}/friend_favorites/{friend_username}", headers=headers)
+    return response.json() if response.status_code == 200 else None
+
 def remove_friend(friend_username, token):
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.delete(f"{API_URL}/remove_friend/{friend_username}", headers=headers)
@@ -238,17 +243,27 @@ else:
         if friends:
             st.subheader("Liste d'amis:")
             for friend in friends:
-                col1, col2 = st.columns([5, 1])
-                with col1:
-                    st.write(f"- {friend['username']}")
-                with col2:
-                    if st.button("Retirer", key=f"remove_friend_{friend['username']}", use_container_width=True):
-                        result = remove_friend(friend['username'], st.session_state.token)
-                        if result:
-                            st.success(result['message'])
-                            st.rerun()
-                        else:
-                            st.error("Erreur lors de la suppression de l'ami.")
+                with st.expander(f"{friend['username']}"):
+                    col1, col2 = st.columns([5, 1])
+                    with col1:
+                        st.write(f"Ami: {friend['username']}")
+                    with col2:
+                        if st.button("Retirer", key=f"remove_friend_{friend['username']}", use_container_width=True):
+                            result = remove_friend(friend['username'], st.session_state.token)
+                            if result:
+                                st.success(result['message'])
+                                st.rerun()
+                            else:
+                                st.error("Erreur lors de la suppression de l'ami.")
+                    
+                    # Affichage des jeux favoris de l'ami
+                    friend_favorites = get_friend_favorites(friend['username'], st.session_state.token)
+                    if friend_favorites:
+                        st.write("Jeux favoris :")
+                        for game in friend_favorites:
+                            st.write(f"- {game['title']}")
+                    else:
+                        st.write("Cet ami n'a pas encore de jeux favoris.")
         else:
             st.info("Vous n'avez pas encore d'amis.")
 

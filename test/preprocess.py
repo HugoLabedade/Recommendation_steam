@@ -31,15 +31,11 @@ df = df[df['summary_clean'] != '']
 # Réinitialiser l'index
 df = df.reset_index(drop=True)
 
-# Remplacer la colonne 'summary' par 'summary_clean'
-df['summary'] = df['summary_clean']
-df = df.drop('summary_clean', axis=1)
-
 # Afficher le nombre de lignes après le nettoyage
 print(f"Nombre de lignes après le nettoyage : {len(df)}")
 
 # Afficher quelques exemples pour vérification
-print(df['summary'].head())
+print(df['summary_clean'].head())
 
 # Chargement du modèle Sentence Transformer
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
@@ -52,7 +48,7 @@ def encode_summary(summary):
 
 # Encodage des résumés
 print("Encodage des résumés...")
-df['encoded_summary'] = df['summary'].apply(encode_summary)
+df['encoded_summary'] = df['summary_clean'].apply(encode_summary)
 
 # Conversion des encodages en chaînes de caractères pour le stockage CSV
 df['encoded_summary'] = df['encoded_summary'].apply(lambda x: ','.join(map(str, x)))
