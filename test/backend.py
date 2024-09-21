@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict
 from sentence_transformers import SentenceTransformer, util
 from transformers import AutoTokenizer, AutoModel
+from notes import print_similar_games, run_machine_learning_model
 import torch
 import jwt
 import pandas as pd
@@ -45,6 +46,9 @@ class RecommendRequest(BaseModel):
 class Game(BaseModel):
     title: str
     description: str
+
+class PromptRequest(BaseModel):
+    prompt: str
 
 # Configuration de la sécurité
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -226,6 +230,12 @@ async def recommend_games(request: RecommendRequest, current_user: dict = Depend
     ]
     
     return {"recommended_games": recommended_games}
+
+#recommandations par notes des users, comme sur le 1er projet
+@app.post("/recommend_note")
+async def run_model(request: RecommendRequest, current_user: dict = Depends(get_current_user)):
+    result = run_machine_learning_model(request.prompt)
+    return {"result": result}
 
 if __name__ == "__main__":
     import uvicorn

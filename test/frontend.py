@@ -1,7 +1,12 @@
+import pandas as pd
 import streamlit as st
+from streamlit_searchbox import st_searchbox
+from css import display_image_on_hover
 import requests
 
 API_URL = "http://localhost:8000"
+
+
 
 def register(username, password):
     response = requests.post(f"{API_URL}/register", json={"username": username, "password": password})
@@ -44,6 +49,11 @@ def remove_friend(friend_username, token):
 def recommend_games(query, token):
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.post(f"{API_URL}/recommend", json={"query": query}, headers=headers)
+    return response.json() if response.status_code == 200 else None
+
+def recommend_note(query, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.post(f"{API_URL}/recommend_note", json={"query": query}, headers=headers)
     return response.json() if response.status_code == 200 else None
 
 def add_favorite(game, token):
@@ -121,7 +131,7 @@ else:
         st.rerun()
 
     # Onglets principaux
-    tab1, tab2, tab3 = st.tabs(["Recommandations", "Profil", "Amis"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Recommandations", "Profil", "Amis", "Recommendations par notes des users"])
 
     with tab1:
         # Recommandation de jeux
@@ -241,6 +251,53 @@ else:
                             st.error("Erreur lors de la suppression de l'ami.")
         else:
             st.info("Vous n'avez pas encore d'amis.")
+
+    with tab4:
+        game_data = pd.read_csv("../data/Dataset.csv", usecols=["Game"])
+        game_data = game_data.drop_duplicates()
+        game_data = game_data.reset_index(drop=True)
+
+        def search(searchterm: str) -> list[tuple[str, any]]:
+            liste = []
+            for i in range(len(game_data[game_data["Game"].str.contains(searchterm, case=False)].values)):
+                liste.append(str(game_data[game_data["Game"].str.contains(searchterm, case=False)].values[i])[2:-2])
+            return liste
+
+        def render_image(url):
+            return f'<img src="{url}" width="150">'
+
+        query = st_searchbox(search)
+        if st.button("Exécuter le modèle"):
+            # Appel à l'API FastAPI avec le prompt saisi par l'utilisateur
+            #response = requests.post(f"{API_URL}/recommend_note", json={"prompt": resultat})
+
+            if query:
+                recommended_games_note = recommend_note(query, st.session_state.token)
+                st.header(f"Si vous avez aimé ce jeu vous allez aimer :sunglasses: :")
+                print(recommended_games_note)
+                #if recommended_games_note:
+                #    st.session_state.recommended_games_note = recommended_games_note['recommended_games_note']
+                #    st.rerun()
+                #else:
+                #    st.error("Une erreur s'est produite lors de la récupération des recommandations.")
+
+                # A list of image urls, sa description et son genre
+                url_dict = {
+                    "Image":[], "Genre":[], "Description":[],"Jeu":[]
+                }
+
+                for image in result["Image"]:
+                    url_dict["Image"].append(result["Image"][image])
+                    url_dict["Description"].append(result["Description"][image])
+                    url_dict["Genre"].append(result["Genres"][image])
+                    url_dict["Jeu"].append(result["Jeux"][image])
+
+                # Create a container for the content that triggers the tooltip on mouseover
+                for i, url in enumerate(url_dict["Image"]):
+                    genre = url_dict["Genre"][i]
+                    description = url_dict["Description"][i]
+                    jeu = url_dict["Jeu"][i]
+                    display_image_on_hover(i, genre, url, description, jeu)
 
     # Ajoutez ce style CSS personnalisé pour réduire la taille des boutons
     st.markdown("""
