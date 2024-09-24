@@ -61,8 +61,8 @@ def df_catego(genre):
     catego = pd.DataFrame({"Game": catego["Game"], "About_the_game": catego["About_the_game"], "Header_image": catego["Header_image"], "Categories": catego["Categories"], "Genres": catego["Genres"], "GameID": catego["GameID"], "Score": catego["Score"]})
     return catego
 
-def run_machine_learning_model(prompt):
+def run_machine_learning_model(query):
     global Vh
-    liste_jeux = print_similar_games(game_data, prompt, Vh)
+    liste_jeux = print_similar_games(game_data, query, Vh)
     result = pd.DataFrame({"Jeux": liste_jeux["Jeux"], "Description": liste_jeux["Description"], "Genres": liste_jeux["Genre"], "Image": liste_jeux["Image"]})
     return result

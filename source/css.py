@@ -50,7 +50,6 @@ def display_image_on_hover(i, genre, image_url, description, jeu):
     # Define the html for each image
     image_hover = f'''
         <div class="{hover_class}">
-            <img src="{image_url}"></img>
             <div class="{tooltip_class}"><h4 style="color: #555;"><b>{jeu}</b></h4><h5 style="color: #555;"><b>Genre:</h5><p style="border-radius: 3px; color: white;background-color: bluegrey;display: inline-block;">{genre}</p><p><h5 style="color: #555;">Description:</h5><p>{description}</p>
             </div>
         </div>

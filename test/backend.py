@@ -239,8 +239,8 @@ async def recommend_games(request: RecommendRequest, current_user: dict = Depend
 
 #recommandations par notes des users, comme sur le 1er projet
 @app.post("/recommend_note")
-async def run_model(request: RecommendRequest, current_user: dict = Depends(get_current_user)):
-    result = run_machine_learning_model(request.prompt)
+async def recommend_note(request: RecommendRequest, current_user: dict = Depends(get_current_user)):
+    result = run_machine_learning_model(request.query)
     return {"result": result}
 
 if __name__ == "__main__":
