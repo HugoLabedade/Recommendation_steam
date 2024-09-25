@@ -3,6 +3,8 @@ import streamlit as st
 from streamlit_searchbox import st_searchbox
 from css import display_image_on_hover
 import requests
+import json
+import traceback
 
 API_URL = "http://localhost:8000"
 
@@ -136,15 +138,16 @@ else:
         st.rerun()
 
     # Onglets principaux
-    tab1, tab2, tab3, tab4 = st.tabs(["Recommandations", "Profil", "Amis", "Recommendations par notes des users"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Recommandations par langage naturel", "Recommendations par notes des users", "Profil", "Amis"])
 
     with tab1:
         # Recommandation de jeux
         query = st.text_input("Décrivez le jeu que vous recherchez")
 
-        if st.button("Rechercher"):
+        if st.button("Rechercher", key=1):
             if query:
                 recommended_games = recommend_games(query, st.session_state.token)
+                print(recommended_games)
                 if recommended_games:
                     st.session_state.recommended_games = recommended_games['recommended_games']
                     st.rerun()
@@ -169,7 +172,42 @@ else:
                             st.error("Erreur lors de l'ajout aux favoris.")
 
     with tab2:
-        # Profil utilisateur
+        game_data = pd.read_csv("../data/Dataset.csv", usecols=["Game"])
+        game_data = game_data.drop_duplicates()
+        game_data = game_data.reset_index(drop=True)
+
+        def search(searchterm: str) -> list[tuple[str, any]]:
+            liste = []
+            for i in range(len(game_data[game_data["Game"].str.contains(searchterm, case=False)].values)):
+                liste.append(str(game_data[game_data["Game"].str.contains(searchterm, case=False)].values[i])[2:-2])
+            return liste
+
+        def render_image(url):
+            return f'<img src="{url}" width="150">'
+
+        query = st_searchbox(search)
+        if st.button("Rechercher", key=2):
+            if query:
+                result = recommend_note(query, st.session_state.token)
+                st.header(f"Si vous avez aimé ce jeu vous allez aimer :sunglasses: :")
+                url_dict = pd.DataFrame(result["result"])
+                
+                #On itere dans le df pour afficher les jeux
+                for i, game in url_dict.iterrows():
+                    with st.expander(f"{i}. {url_dict['Jeux'][i]}"):
+                        st.image(url_dict["Image"][i])
+                        st.write(f"Genre : {url_dict['Genres'][i]}")
+                        st.write(f"Description : {url_dict['Description'][i]}")
+                        if st.button(f"Ajouter aux favoris2", key=f"fav_{i}"):
+                            result = add_favorite({"title": url_dict['Jeux'], "description": url_dict['Description']}, st.session_state.token)
+                            if result:
+                                st.success(result['message'])
+                                st.session_state.favorites = get_favorites(st.session_state.token)
+                            else:
+                                st.error("Erreur lors de l'ajout aux favoris.")
+
+    with tab3:
+    # Profil utilisateur
         st.header("Votre profil")
         
         # Affichage des favoris
@@ -194,10 +232,9 @@ else:
         else:
             st.info("Vous n'avez pas encore de jeux favoris.")
 
-    with tab3:
+    with tab4:
         # Système d'amis
         st.header("Amis")
-
         # Envoi de demande d'ami
         col1, col2 = st.columns([1, 1])
         with col1:
@@ -266,39 +303,6 @@ else:
                         st.write("Cet ami n'a pas encore de jeux favoris.")
         else:
             st.info("Vous n'avez pas encore d'amis.")
-
-    with tab4:
-        game_data = pd.read_csv("../data/Dataset.csv", usecols=["Game"])
-        game_data = game_data.drop_duplicates()
-        game_data = game_data.reset_index(drop=True)
-
-        def search(searchterm: str) -> list[tuple[str, any]]:
-            liste = []
-            for i in range(len(game_data[game_data["Game"].str.contains(searchterm, case=False)].values)):
-                liste.append(str(game_data[game_data["Game"].str.contains(searchterm, case=False)].values[i])[2:-2])
-            return liste
-
-        def render_image(url):
-            return f'<img src="{url}" width="150">'
-
-        query = st_searchbox(search)
-        if st.button("Exécuter le modèle"):
-            if query:
-                result = recommend_note(query, st.session_state.token)
-                st.header(f"Si vous avez aimé ce jeu vous allez aimer :sunglasses: :")
-                url_dict = pd.DataFrame(result["result"])
-
-                #On itere dans le df pour afficher les jeux
-                for i, url in url_dict.iterrows():
-                    genre = url_dict["Genres"][i]
-                    description = url_dict["Description"][i]
-                    jeu = url_dict["Jeux"][i]
-                    url = url_dict["Image"][i]
-                    
-                    # Appel de la fonction pour afficher l'image avec hover (ce
-                    # tte fonction doit être définie)
-                    display_image_on_hover(i, genre, url, description, jeu)
-
 
     # Ajoutez ce style CSS personnalisé pour réduire la taille des boutons
     st.markdown("""
