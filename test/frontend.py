@@ -1,13 +1,10 @@
 import pandas as pd
 import streamlit as st
 from streamlit_searchbox import st_searchbox
-from css import display_image_on_hover
 import requests
-import json
-import traceback
+
 
 API_URL = "http://localhost:8000"
-
 
 
 def register(username, password):
@@ -147,7 +144,6 @@ else:
         if st.button("Rechercher", key=1):
             if query:
                 recommended_games = recommend_games(query, st.session_state.token)
-                print(recommended_games)
                 if recommended_games:
                     st.session_state.recommended_games = recommended_games['recommended_games']
                     st.rerun()
@@ -182,34 +178,30 @@ else:
                 liste.append(str(game_data[game_data["Game"].str.contains(searchterm, case=False)].values[i])[2:-2])
             return liste
 
-        def render_image(url):
-            return f'<img src="{url}" width="150">'
-
         query = st_searchbox(search)
+        
         if st.button("Rechercher", key=2):
-            if query:
-                result = recommend_note(query, st.session_state.token)
-                st.header(f"Si vous avez aimé ce jeu vous allez aimer :sunglasses: :")
-                url_dict = pd.DataFrame(result["result"])
-                
-                #On itere dans le df pour afficher les jeux
-                for i, game in url_dict.iterrows():
-                    with st.expander(f"{i}. {url_dict['Jeux'][i]}"):
-                        st.image(url_dict["Image"][i])
-                        st.write(f"Genre : {url_dict['Genres'][i]}")
-                        st.write(f"Description : {url_dict['Description'][i]}")
-                        if st.button(f"Ajouter aux favoris2", key=f"fav_{i}"):
-                            result = add_favorite({"title": url_dict['Jeux'], "description": url_dict['Description']}, st.session_state.token)
-                            if result:
-                                st.success(result['message'])
-                                st.session_state.favorites = get_favorites(st.session_state.token)
-                            else:
-                                st.error("Erreur lors de l'ajout aux favoris.")
+            result = recommend_note(query, st.session_state.token)
+            st.subheader(f"Si vous avez aimé ce jeu vous allez aimer :sunglasses: :")
+            url_dict = pd.DataFrame(result["result"])
+            #On itere dans le df pour afficher les jeux
+            for i, game in url_dict.iterrows():
+                with st.expander(f"{i}. {url_dict['Jeux'][i]}"):
+                    st.image(url_dict["Image"][i])
+                    st.write(f"Genre : {url_dict['Genres'][i]}")
+                    st.write(f"Description : {url_dict['Description'][i]}")
+                    if st.button(f"Ajouter aux favoris", key=f"fav_{i}"):
+                        result = add_favorite({"title": url_dict['Jeux'], "description": url_dict['Description']}, st.session_state.token)
+                        if result:
+                            st.success(result['message'])
+                            st.session_state.favorites = get_favorites(st.session_state.token)
+                        else:
+                            st.error("Erreur lors de l'ajout aux favoris.")
 
     with tab3:
     # Profil utilisateur
         st.header("Votre profil")
-        
+
         # Affichage des favoris
         st.subheader("Vos jeux favoris:")
         st.session_state.favorites = get_favorites(st.session_state.token)
