@@ -76,14 +76,14 @@ model.to(device)
 
 # Chargement des données de jeux depuis encoded_games.csv avec les résumés préencodés
 print("Chargement des données encodées...")
-df = pd.read_csv('encoded_games.csv')
+df = pd.read_csv('../data/encodedgames.csv')
 df['encoded_summary'] = df['encoded_summary'].apply(lambda x: np.fromstring(x[1:-1], sep=', ', dtype=np.float32))
 
 # Optimisation : création d'un seul numpy array avant la conversion en tensor
 encoded_summaries = np.array(df['encoded_summary'].tolist(), dtype=np.float32)
 games_embeddings = torch.from_numpy(encoded_summaries).to(device)
 
-games = df[['name', 'summary']].to_dict('records')
+games = df[['name', 'summary', 'url']].to_dict('records')
 
 # Fonctions utilitaires
 def verify_password(plain_password, hashed_password):
@@ -268,6 +268,7 @@ async def recommend_games(request: RecommendRequest, current_user: dict = Depend
         {
             "title": games[idx]['name'],
             "description": games[idx]['summary'],
+            "url": str(games[idx]['url']),
             "score": score.item()
         }
         for score, idx in zip(top_results.values, top_results.indices)

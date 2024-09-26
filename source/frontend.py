@@ -167,6 +167,7 @@ else:
             for i, game in enumerate(st.session_state.recommended_games, 1):
                 similarity_score = game['score'] * 100  # Convert to percentage
                 with st.expander(f"{i}. {game['title']} (Similarité: {similarity_score:.2f}%)"):
+                    st.image(game['url'], width=300)
                     st.write(game['description'])
                     st.progress(game['score'])
                     if st.button(f"Ajouter aux favoris", key="1"f"fav_{i}"):
@@ -201,7 +202,7 @@ else:
                     st.write(f"Genre : {url_dict['Genres'][i]}")
                     st.write(f"Description : {url_dict['Description'][i]}")
                     if st.button(f"Ajouter aux favoris", key="2"f"fav_{i}"):
-                        result = add_favorite({"title": url_dict['Jeux'], "description": url_dict['Description']}, st.session_state.token)
+                        result = add_favorite({"title": game['Jeux'], "description": game['Description']}, st.session_state.token)
                         if result:
                             st.success(result['message'])
                             st.session_state.favorites = get_favorites(st.session_state.token)
