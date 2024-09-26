@@ -15,6 +15,16 @@ def login(username, password):
     response = requests.post(f"{API_URL}/token", data={"username": username, "password": password})
     return response.json() if response.status_code == 200 else None
 
+def update_username(new_username, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.put(f"{API_URL}/update_username", json={"new_username": new_username}, headers=headers)
+    return response.json() if response.status_code == 200 else None
+
+def update_password(current_password, new_password, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.put(f"{API_URL}/update_password", json={"current_password": current_password, "new_password": new_password}, headers=headers)
+    return response.json() if response.status_code == 200 else None
+
 def send_friend_request(friend_username, token):
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.post(f"{API_URL}/send_friend_request/{friend_username}", headers=headers)
@@ -199,30 +209,68 @@ else:
                             st.error("Erreur lors de l'ajout aux favoris.")
 
     with tab3:
-    # Profil utilisateur
+        # Profil utilisateur
         st.header("Votre profil")
 
         # Affichage des favoris
-        st.subheader("Vos jeux favoris:")
-        st.session_state.favorites = get_favorites(st.session_state.token)
-        if st.session_state.favorites:
-            for i, game in enumerate(st.session_state.favorites, 1):
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.write(f"{i}. {game['title']}")
-                    st.write(f"   Description: {game['description']}")
-                with col2:
-                    if st.button("Supprimer", key=f"remove_{i}"):
-                        result = remove_favorite(game['title'], st.session_state.token)
+        with st.expander("Vos jeux favoris", expanded=True):
+            st.session_state.favorites = get_favorites(st.session_state.token)
+            if st.session_state.favorites:
+                for i, game in enumerate(st.session_state.favorites, 1):
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(f"{i}. {game['title']}")
+                        st.write(f"   Description: {game['description']}")
+                    with col2:
+                        if st.button("Supprimer", key=f"remove_{i}"):
+                            result = remove_favorite(game['title'], st.session_state.token)
+                            if result:
+                                st.success(result['message'])
+                                st.session_state.favorites = get_favorites(st.session_state.token)
+                                st.rerun()
+                            else:
+                                st.error("Erreur lors de la suppression du favori.")
+                    st.write("---")
+            else:
+                st.info("Vous n'avez pas encore de jeux favoris.")
+
+        # Changer le nom d'utilisateur
+        with st.expander("Changer le nom d'utilisateur"):
+            new_username = st.text_input("Nouveau nom d'utilisateur")
+            if st.button("Changer le nom d'utilisateur"):
+                if new_username:
+                    result = update_username(new_username, st.session_state.token)
+                    if result:
+                        st.success(result['message'])
+                        st.warning("Veuillez vous reconnecter avec votre nouveau nom d'utilisateur.")
+                        st.session_state.token = None
+                        st.rerun()
+                    else:
+                        st.error("Erreur lors du changement de nom d'utilisateur.")
+                else:
+                    st.warning("Veuillez entrer un nouveau nom d'utilisateur.")
+
+        # Changer le mot de passe
+        with st.expander("Changer le mot de passe"):
+            current_password = st.text_input("Mot de passe actuel", type="password")
+            new_password = st.text_input("Nouveau mot de passe", type="password")
+            confirm_new_password = st.text_input("Confirmer le nouveau mot de passe", type="password")
+
+            if st.button("Changer le mot de passe"):
+                if current_password and new_password and confirm_new_password:
+                    if new_password == confirm_new_password:
+                        result = update_password(current_password, new_password, st.session_state.token)
                         if result:
                             st.success(result['message'])
-                            st.session_state.favorites = get_favorites(st.session_state.token)
+                            st.warning("Veuillez vous reconnecter avec votre nouveau mot de passe.")
+                            st.session_state.token = None
                             st.rerun()
                         else:
-                            st.error("Erreur lors de la suppression du favori.")
-                st.write("---")
-        else:
-            st.info("Vous n'avez pas encore de jeux favoris.")
+                            st.error("Erreur lors du changement de mot de passe.")
+                    else:
+                        st.error("Les nouveaux mots de passe ne correspondent pas.")
+                else:
+                    st.warning("Veuillez remplir tous les champs pour changer le mot de passe.")
 
     with tab4:
         # Système d'amis

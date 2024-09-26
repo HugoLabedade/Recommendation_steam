@@ -33,6 +33,13 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     username: str
 
+class UsernameUpdate(BaseModel):
+    new_username: str
+
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -134,6 +141,37 @@ def register(user: UserCreate):
     favorites[user.username] = []
     friend_requests[user.username] = []
     return UserOut(username=user.username)
+
+@app.put("/update_username")
+async def update_username(username_update: UsernameUpdate, current_user: dict = Depends(get_current_user)):
+    if username_update.new_username in users:
+        raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris")
+    
+    # Mettre à jour le nom d'utilisateur dans toutes les structures de données
+    old_username = current_user['username']
+    users[username_update.new_username] = users.pop(old_username)
+    users[username_update.new_username]['username'] = username_update.new_username
+    
+    friendships[username_update.new_username] = friendships.pop(old_username)
+    favorites[username_update.new_username] = favorites.pop(old_username)
+    friend_requests[username_update.new_username] = friend_requests.pop(old_username)
+    
+    # Mettre à jour les listes d'amis des autres utilisateurs
+    for friends_list in friendships.values():
+        if old_username in friends_list:
+            friends_list[friends_list.index(old_username)] = username_update.new_username
+    
+    return {"message": "Nom d'utilisateur mis à jour avec succès"}
+
+@app.put("/update_password")
+async def update_password(password_update: PasswordUpdate, current_user: dict = Depends(get_current_user)):
+    if not verify_password(password_update.current_password, current_user['hashed_password']):
+        raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
+    
+    new_hashed_password = get_password_hash(password_update.new_password)
+    users[current_user['username']]['hashed_password'] = new_hashed_password
+    
+    return {"message": "Mot de passe mis à jour avec succès"}
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
